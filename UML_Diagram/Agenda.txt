@@ -1,0 +1,58 @@
+ build tool: Maven 
+Java version 17 
+Spring Boot
+ Keycloak docker-compose include 
+
+ follow the defaults in this plan
+ 
+  modular code structure
+  
+ infra: Docker + Kubernetes (EKS), Kafka, MySQL (with option to migrate to Mongo later), Redis, S3.
+ 	Finalize modules
+	 APIs
+	 DB schemas
+	 auth style (JWT / Spring Authorization Server).
+	 
+
+
+What the project will include
+•	spring-boot 3.x, Java 17+ (production)
+•	Spring components:
+o	Spring Web (REST)
+o	Spring Data JPA (MySQL), with UUID PK mapping
+o	Spring Security OAuth2 Resource Server (JWT validation)
+o	Spring Cloud OpenFeign (service-to-service client)
+o	Kafka template for publishing events
+•	Database DDL scripts (MySQL) 
+•	API endpoints:
+	POST /api/v1/users — create single user
+
+•	Bulk Excel: Apache POI to parse .xlsx, with validation and per-row error reporting
+•	Unit tests + integration tests:
+o	JUnit 5, Mockito for unit tests
+
+
+Phase 1 — Core service (User Service) — we’ll implement this first
+•	Features:
+o	Registration, login (via Auth server), profile CRUD
+o	Role management (single, many-to-many)
+o	Bulk add users endpoint: JSON body + XLSX upload processing
+o	Publish events to Kafka (UserCreated)
+o	DB: MySQL DDL with UUID primary keys (BINARY(16)), indexes, FK constraints
+o	Security: resource server config (JWT validation), and client credentials for service-to-service
+o	Unit & integration tests (JUnit5 + Mockito + Testcontainers)
+o	SonarQube configuration and GitHub Actions CI pipeline
+o	Dockerfile, Helm chart / k8s manifest
+Phase 2 — Booking Service (pattern)
+•	Seat locking (Redis optimistic lock), booking transaction, publish BookingCreated
+•	Payment integration (external gateway abstraction)
+•	Cancellation flow + refunds
+•	Async consumers (Notification, Analytics)
+Phase 3 — Other services
+•	Search (Elasticsearch), Seat Layout, Review, Operator, Notification, Analytics
+•	Admin service with bulk operations, audit logs (partitioned)
+•	Frontend Angular + Flutter guides and starter templates
+Phase 4 — Ops & Hardening
+•	Deploy to EKS, configure Kafka, set up monitoring (Prometheus / Grafana), tracing (Jaeger), centralized logs (ELK), backups, policies.
+•	Performance testing and scaling rules (HPA, sharding, partitioning)
+•	Security audit and Sonar remediation until quality gates pass 

@@ -1,0 +1,167 @@
+@startuml
+' ================================================================
+' Future-proof Bus Booking System - Architecture Diagram
+' Includes: microservices, DBs, security layer, event bus, scaling points
+' ================================================================
+
+skinparam componentStyle rectangle
+skinparam backgroundColor #FAFAFA
+skinparam shadowing false
+skinparam handwritten false
+
+title Bus Booking System — High-Level Architecture (Security + Scalability)
+
+actor "Users (Web/Mobile)" as Users
+actor "Admin" as AdminUser
+
+' ------------------ Edge & Delivery ------------------
+rectangle "Edge & Delivery" {
+  [CDN] as CDN
+  [Load Balancer] as LB
+  [API Gateway\n(Spring Cloud Gateway / Kong)] as GW
+}
+
+Users --> CDN
+Users --> LB
+AdminUser --> LB
+LB --> GW
+
+' ------------------ Security & Discovery ------------------
+rectangle "Security & Discovery" {
+  component "Auth Server\n(OAuth2 / OpenID Connect)\n(Keycloak / Auth0)" as AUTH <<security>>
+  component "Service Registry\n(Eureka / Consul)" as SR
+  component "Service Mesh / mTLS\n(Istio / Linkerd)" as MESH <<security>>
+}
+
+GW --> AUTH : token issuance / introspect
+GW --> SR : discover services
+GW --> MESH : route via service mesh
+
+' ------------------ Microservices ------------------
+package "Microservices (Spring Boot)" {
+  component "User Service" as US <<service>>
+  component "Booking Service" as BKS <<service>>
+  component "Bus/Operator Service" as BS <<service>>
+  component "Payment Service" as PS <<service>>
+  component "Review Service" as RS <<service>>
+  component "Admin Service" as AS <<service>>
+  component "Notification Service" as NS <<service>>
+  component "Analytics Service" as ANS <<service>>
+}
+
+GW --> US
+GW --> BKS
+GW --> BS
+GW --> PS
+GW --> RS
+GW --> AS
+GW --> NS
+
+' Inter-service (examples)
+BKS --> PS : sync (REST/gRPC) [use client-credentials JWT]
+BKS --> US : get user details
+BKS --> BS : check trip / seat info
+AS --> BS : manage buses
+AS --> BKS : manage bookings
+
+' ------------------ Async / Event Bus ------------------
+rectangle "Event-driven / Async" {
+  component "Kafka / RabbitMQ\n(Event Bus)" as MQ <<infra>>
+}
+BKS --> MQ : publish BookingCreated
+PS --> MQ : publish PaymentStatus
+AS --> MQ : publish BusUpdated
+MQ --> NS : consume BookingCreated -> send notifications
+MQ --> BS : consume BusUpdated -> update caches / search
+MQ --> ANS : consume events -> analytics & metrics
+
+' ------------------ Data Layer (Per-service DBs) ------------------
+package "Data Layer" {
+  database "User DB\n(UUID keys)" as UDB
+  database "Booking DB\n(partitioned by time / shard by region)" as BDB
+  database "Bus DB" as BUSDB
+  database "Payment DB\n(PCI scope - tokenized, vaulted)" as PDB
+  database "Review DB" as RDB
+  database "Analytics DB\n(datawarehouse)" as ADB
+  [Redis Cache] as REDIS
+  [Object Storage (S3/MinIO)] as S3
+}
+
+US --> UDB
+BKS --> BDB
+BS --> BUSDB
+PS --> PDB
+RS --> RDB
+ANS --> ADB
+US --> REDIS
+BKS --> REDIS
+BS --> REDIS
+NS --> S3
+
+' ------------------ Observability & Ops ------------------
+rectangle "Observability & Ops" {
+  component "Prometheus / Grafana" as MON
+  component "Jaeger / Zipkin (Tracing)" as TRACING
+  component "ELK / Loki Logging" as LOG
+  component "CI/CD (Jenkins / GitHub Actions)" as CICD
+  component "Kubernetes (K8s)\n+ HPA (autoscale)" as K8S
+}
+
+K8S --> MON
+K8S --> TRACING
+K8S --> LOG
+K8S --> CICD
+
+' Services deployed on K8S
+US ..> K8S
+BKS ..> K8S
+BS ..> K8S
+PS ..> K8S
+AS ..> K8S
+NS ..> K8S
+ANS ..> K8S
+MQ ..> K8S
+
+' ------------------ Security annotations ------------------
+note left of AUTH
+  Auth Server:
+  - OAuth2 / OpenID Connect
+  - Issues signed JWTs (RS256)
+  - Manages users, roles, clients, scopes
+end note
+
+note right of MESH
+  Service Mesh:
+  - mTLS for service-to-service traffic
+  - Retry, circuit-breaker, traffic shifting
+end note
+
+' ------------------ Scaling & Data Strategy notes ------------------
+note bottom
+  Scaling & Resilience:
+  * Use BINARY(16) UUIDs for PKs for distributed systems (UUID_TO_BIN(UUID(),1)).
+  * Partition append-only tables (admin_activity_logs, booking_history) monthly/quarterly.
+  * Shard Booking DB by geography or tenant for write scale.
+  * Read replicas for heavy-read services (Search, Listing).
+  * Cache hot data (seat maps, trip availability) in Redis; prewarm on Bus updates.
+  * Use Kafka topic partitioning (by tripId) for parallel consumers and ordering where needed.
+  * Use idempotent consumers and event deduplication keys.
+  * Enforce least-privilege RBAC in Auth Server for Admin operations.
+  * Do not store raw card PANs in DB — use tokenization and a vault.
+end note
+
+' ------------------ Draw arrows for essential flows ------------------
+Users --> GW : HTTPS (JWT after login)
+AdminUser --> GW : HTTPS (Admin JWT)
+GW --> US : REST/gRPC (validated JWT)
+GW --> AS : REST (admin endpoints)
+BKS --> MQ : publish Booking events
+MQ --> NS : notify user
+REDIS <-- BKS : read/write seat locks & caches
+UDB <-- US : user persist
+BDB <-- BKS : booking persist
+PDB <-- PS : payment persist (tokenized)
+BUSDB <-- BS : bus & routes persist
+ADB <-- ANS : analytics ingest
+
+@enduml

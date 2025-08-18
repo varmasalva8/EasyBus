@@ -1,0 +1,188 @@
+@startuml
+' Presentation-ready color-coded architecture for Bus Booking System
+' Paste into PlantUML/PlantText to render (one-page diagram)
+
+' Styling
+skinparam backgroundColor #FFFFFF
+skinparam shadowing true
+skinparam componentStyle rectangle
+skinparam rectangle {
+  Shadowing false
+}
+
+' Colors
+!define COLOR_FRONTEND #dbeafe
+!define COLOR_EDGE #fde68a
+!define COLOR_SECURITY #fee2e2
+!define COLOR_SERVICE #bfdbfe
+!define COLOR_DATA #bbf7d0
+!define COLOR_INFRA #fde9d9
+!define COLOR_OBS #fbe7ff
+
+title Bus Booking System — Presentation-ready Architecture (Color-coded)
+
+' ---------- Clients ----------
+package "Clients" #COLOR_FRONTEND {
+  actor "Angular Web App" as WEB
+  actor "Flutter Mobile App" as MOBILE
+  actor "Admin Portal (Angular)" as ADMIN_UI
+}
+
+' ---------- Edge & Gateway ----------
+package "Edge & Delivery" #COLOR_EDGE {
+  component "CDN" as CDN
+  component "Load Balancer" as LB
+  component "API Gateway / BFF" as GW
+}
+
+' ---------- Security & Discovery ----------
+package "Security & Discovery" #COLOR_SECURITY {
+  component "Auth Server\n(OAuth2 / OIDC, Keycloak/Auth0)" as AUTH
+  component "Service Registry\n(Eureka/Consul or K8s DNS)" as REG
+  component "Service Mesh\n(mTLS - Istio/Linkerd)" as MESH
+}
+
+' ---------- Microservices ----------
+package "Microservices (Java / Spring Boot)" #COLOR_SERVICE {
+  component "User Service" as US
+  component "Search Service" as SS
+  component "Seat Layout Service" as SEAT
+  component "Booking Service" as BKS
+  component "Payment Service" as PS
+  component "Cancellation Service" as CS
+  component "Review & Rating Service" as RS
+  component "Operator/Vehicle Service\n(Buses, Cars, Bikes; Discounts)" as OPS
+  component "Notification Service" as NS
+  component "Analytics Service" as ANS
+  component "Admin Service" as AS
+}
+
+' ---------- Event Bus & Async ----------
+package "Event-driven / Async" #COLOR_INFRA {
+  component "Kafka / RabbitMQ\n(Event Bus)" as MQ
+}
+
+' ---------- Data Layer ----------
+package "Data Layer" #COLOR_DATA {
+  database "User DB\n(UUID PKs)" as UDB
+  database "Booking DB\n(partitioned)" as BDB
+  database "Bus/Vehicle DB" as BUSDB
+  database "Payment DB\n(tokenized)" as PDB
+  database "Review DB" as RDB
+  component "Redis Cache" as REDIS
+  component "S3 / Object Store" as S3
+}
+
+' ---------- Observability & Ops ----------
+package "Observability & Ops" #COLOR_OBS {
+  component "Prometheus + Grafana" as MON
+  component "Jaeger / Zipkin (Tracing)" as TRACING
+  component "ELK / Loki Logs" as LOG
+  component "CI/CD (Jenkins / GitHub Actions)" as CICD
+  component "Kubernetes (EKS) + HPA" as K8S
+}
+
+' ---------- Connections (visual) ----------
+WEB --> CDN
+MOBILE --> CDN
+ADMIN_UI --> CDN
+
+CDN --> LB
+LB --> GW
+
+GW --> AUTH : token issue / validate (OAuth2)
+GW --> REG : discover services
+GW --> US
+GW --> SS
+GW --> SEAT
+GW --> BKS
+GW --> PS
+GW --> CS
+GW --> RS
+GW --> OPS
+GW --> NS
+GW --> AS
+
+' Service to DB connections
+US --> UDB
+BKS --> BDB
+OPS --> BUSDB
+PS --> PDB
+RS --> RDB
+NS --> S3
+US --> REDIS
+SS --> REDIS
+SEAT --> REDIS
+
+' Async flows
+BKS --> MQ : publish BookingCreated
+PS --> MQ : publish PaymentStatus
+AS  --> MQ : publish AdminEvents
+
+MQ --> NS : consume BookingCreated -> send notifications
+MQ --> OPS : consume BookingCreated -> update manifests
+MQ --> ANS : consume events -> analytics / metrics
+
+' Observability
+US --> MON
+BKS --> MON
+PS --> MON
+US --> TRACING
+BKS --> TRACING
+PS --> TRACING
+US --> LOG
+BKS --> LOG
+
+' Infra deployment
+K8S ..> US
+K8S ..> BKS
+K8S ..> SS
+K8S ..> SEAT
+K8S ..> PS
+K8S ..> RS
+K8S ..> OPS
+K8S ..> NS
+K8S ..> AS
+K8S ..> MQ
+
+CICD --> K8S : deploy
+K8S --> MON
+K8S --> LOG
+
+' ---------- Annotations / Scaling Points ----------
+note right of BDB
+  Scaling & Safety:
+  * Partition booking tables by time / shard by region
+  * Use read replicas for heavy-read use cases
+  * Use idempotent consumers & event dedupe keys
+  * Use Redis + optimistic locking for seat reservations
+end note
+
+note left of PS
+  Payments:
+  * Do not store PANs - use tokenization / vault
+  * Keep PCI-scope minimized
+  * External payment gateway integrations pluggable
+end note
+
+note bottom
+  Security & Best Practices:
+  * Use OAuth2 / OIDC with RS256-signed JWTs
+  * API Gateway enforces rate-limits, WAF, auth checks
+  * mTLS (Service Mesh) for service-to-service auth
+  * Centralized logging, tracing, and alerting
+  * Use schema migrations (Flyway/Liquibase) and feature toggles
+end note
+
+' Legend
+legend right
+  |#COLOR_FRONTEND| Frontend (Angular / Flutter)
+  |#COLOR_EDGE| Edge & Gateway
+  |#COLOR_SECURITY| Security & Discovery
+  |#COLOR_SERVICE| Microservices (Spring Boot)
+  |#COLOR_DATA| Data Layer (DB / Cache / Storage)
+  |#COLOR_INFRA| Async / Event Bus & Infra
+  |#COLOR_OBS| Observability & Ops
+endlegend
+
+@enduml

@@ -1,0 +1,37 @@
+@startuml
+skinparam sequence {
+    ArrowThickness 2
+    ActorBorderColor black
+    ParticipantBorderColor black
+    LifeLineBorderColor black
+    LifeLineBackgroundColor white
+}
+
+actor User
+participant "Client" as Client #palegreen
+participant "API Gateway" as APIGW #palegreen
+participant "Review Service" as ReviewSvc #palegreen
+database "ReviewDB" as ReviewDB #palegreen
+participant "Moderation Service" as ModSvc #lightgoldenrodyellow
+queue "MQ" as MQ #lightgoldenrodyellow
+
+User -> Client: 🟢 submit review
+Client -> APIGW: 🟢 POST /reviews {tripId, rating, comment}
+APIGW -> ReviewSvc: 🟢 auth user (JWT) then create review
+ReviewSvc -> ReviewDB: 🟢 insert review (status=PENDING or VISIBLE)
+ReviewDB --> ReviewSvc: 🟢 review_id
+
+alt 🟠 moderation enabled
+    ReviewSvc -> MQ: 🟠 publish ReviewCreated{reviewId}
+    MQ -> ModSvc: 🟠 consume -> check content (profanity/AI)
+    ModSvc -> ReviewDB: 🟠 set status=REJECTED/APPROVED
+end
+
+alt 🔴 DB insert failure
+    ReviewSvc --> APIGW: 🔴 500 error
+    APIGW --> Client: 🔴 show error message
+else 🟢 success
+    ReviewSvc --> APIGW: 🟢 201 {review_id, status}
+    APIGW --> Client: 🟢 show posted (or pending) status
+end
+@enduml

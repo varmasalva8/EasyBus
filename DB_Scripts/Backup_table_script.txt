@@ -1,0 +1,36 @@
+CREATE TABLE IF NOT EXISTS users_backup LIKE users;
+
+CREATE TABLE IF NOT EXISTS user_role_backup LIKE user_role;
+CREATE TABLE IF NOT EXISTS user_profile_backup LIKE user_profile;
+CREATE TABLE IF NOT EXISTS vehicles_backup LIKE vehicles;
+
+CREATE TABLE IF NOT EXISTS role_permissions_backup LIKE role_permissions;
+CREATE TABLE IF NOT EXISTS permissions_backup LIKE permissions;
+
+CREATE TABLE IF NOT EXISTS role_permissions_backup LIKE role_permissions;
+CREATE TABLE IF NOT EXISTS permissions_backup LIKE permissions;
+
+
+
+ALTER TABLE vehicles
+MODIFY COLUMN vehicle_type ENUM('BUS', 'CAR', 'BIKE','AUTO') NOT NULL;
+
+
+
+ALTER TABLE vehicles 
+ADD COLUMN service_type ENUM('AC', 'Non-AC', 'Sleeper', 'Semi-Sleeper', 'Seater') NOT NULL,
+ADD COLUMN depot_name                 VARCHAR(100) NOT NULL, -- Which depot this bus belongs to
+ADD COLUMN  registration_date DATE,                              -- Date bus was registered in system
+ADD COLUMN    current_lat       DECIMAL(10, 8),                      -- Real-time location latitude
+ADD COLUMN   current_lng       DECIMAL(11, 8),                      -- Real-time location longitude
+ADD COLUMN  amenities         VARCHAR(255),                      -- e.g., WiFi, Water Bottle, Charging Point
+ADD COLUMN   seat_capacity     INT NOT NULL,                      -- Total seats
+ADD COLUMN   operator_id       BIGINT NOT NULL,                   -- Bus operator/company
+ADD COLUMN  route_id          BIGINT NOT NULL,                   -- Assigned route
+ADD COLUMN      status            ENUM('Active', 'On Trip','Inactive', 'Maintenance') DEFAULT 'Active',
+ADD COLUMN     fuel_type            ENUM('Diesel', 'Petrol', 'CNG', 'Electric', 'Hybrid') NOT NULL,
+ADD COLUMN	    insurance_valid_upto DATE,                                  -- Insurance expiry date
+ADD COLUMN     last_service_date    DATE,                                  -- Last maintenance date
+ADD COLUMN  next_service_due     DATE,                                  -- Next maintenance due date
+
+ADD COLUMN    color             VARCHAR(20);                        -- Color of vehicle

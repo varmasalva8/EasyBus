@@ -1,0 +1,50 @@
+color-coded PlantUML sequence diagram with 🟢 success, 🔴 failure, and 🟠 optional/background actions and can also add background colored lifelines 
+@startuml
+' === Theme settings ===
+skinparam backgroundColor #FFFFFF
+skinparam sequence {
+    ArrowColor Black
+    LifeLineBorderColor Black
+    LifeLineBackgroundColor #F9F9F9
+    ParticipantBorderColor Black
+    ParticipantBackgroundColor #E0F7FA
+    ActorBackgroundColor #FFF9C4
+    ActorBorderColor Black
+    ArrowThickness 1
+    ArrowFontSize 12
+}
+
+' === Actors/Participants with custom colors ===
+actor User #FFF9C4
+participant "Web/Mobile" as Client #E3F2FD
+participant "API Gateway" as APIGW #FFECB3
+participant "Auth Service\n(Keycloak/OIDC)" as Auth #C8E6C9
+participant "User Service" as UserSvc #FFE0B2
+database "User DB" as UserDB #F8BBD0
+participant "Cache (Redis)" as Cache #D1C4E9
+
+' === Flow ===
+== Login Flow ==
+User -> Client: enter credentials
+Client -[#green]-> APIGW: POST /auth/login {creds} 🟢
+APIGW -[#green]-> Auth: validate credentials (or redirect) 🟢
+Auth -[#green]-> UserDB: lookup user by email (or use LDAP) 🟢
+UserDB -[#green]-> Auth: user record 🟢
+Auth -[#orange]-> Cache: store session/jti (optional) 🟠
+Auth -[#green]-> APIGW: JWT + refresh token 🟢
+APIGW -[#green]-> Client: 200 {JWT} 🟢
+
+== Profile Fetch ==
+Client -[#green]-> APIGW: GET /profile (Authorization: Bearer JWT) 🟢
+APIGW -[#green]-> UserSvc: validate token (or introspect) 🟢
+UserSvc -[#orange]-> Cache: check profile (optional) 🟠
+alt Cache Hit 🟢
+    Cache -[#green]-> UserSvc: profile 🟢
+else Cache Miss 🔴
+    UserSvc -[#green]-> UserDB: read profile 🟢
+    UserDB -[#green]-> UserSvc: profile 🟢
+end
+UserSvc -[#green]-> APIGW: profile 🟢
+APIGW -[#green]-> Client: profile response 🟢
+
+@enduml

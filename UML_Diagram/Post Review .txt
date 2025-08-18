@@ -1,0 +1,57 @@
+extended color-coded PlantUML L for the review submission flow
+with 🟢 success, 🔴 failure, 🟠 background actions, moderation retry handling,
+and a notification service to alert users of rejection.
+
+@startuml
+skinparam sequence {
+    ArrowColor Black
+    LifeLineBorderColor Black
+    LifeLineBackgroundColor White
+}
+
+actor User
+participant "Client" as Client
+participant "API Gateway" as APIGW
+participant "Review Service" as ReviewSvc
+database "ReviewDB" as ReviewDB
+participant "Moderation Service" as ModSvc
+queue "MQ" as MQ
+participant "Notification Service" as Notify
+
+' --- Submit Review ---
+User -[#green]> Client: submit review
+Client -[#green]> APIGW: POST /reviews {tripId, rating, comment}
+APIGW -[#green]> ReviewSvc: auth user (JWT) then create review
+
+alt Auth success
+    ReviewSvc -[#green]> ReviewDB: insert review (status=PENDING or VISIBLE)
+    ReviewDB -[#green]-> ReviewSvc: review_id
+    
+    alt Moderation enabled
+        ReviewSvc -[#orange]> MQ: publish ReviewCreated{reviewId}
+        
+        ' --- Moderation flow with retry ---
+        MQ -[#orange]> ModSvc: consume review
+        alt First moderation attempt fails
+            ModSvc -[#red]-> MQ: nack (retry)
+            MQ -[#orange]> ModSvc: retry ReviewCreated
+        end
+        
+        ' --- Moderation success ---
+        ModSvc -[#orange]> ReviewDB: set status=REJECTED/APPROVED
+        
+        alt Review rejected
+            ModSvc -[#orange]> MQ: publish ReviewRejected{reviewId, reason}
+            MQ -[#orange]> Notify: consume ReviewRejected
+            Notify -[#orange]> Client: send rejection notification
+        end
+    end
+    
+    ReviewSvc -[#green]-> APIGW: 201 {review_id, status}
+    APIGW -[#green]-> Client: show posted (or pending) status
+
+else Auth failure
+    ReviewSvc -[#red]-> APIGW: 401 unauthorized
+    APIGW -[#red]-> Client: show login required
+end
+@enduml

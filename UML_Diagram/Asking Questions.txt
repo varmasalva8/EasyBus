@@ -1,0 +1,71 @@
+User services 
+Search services 
+seat layout services 
+ Booking Services 
+Payment services 
+Cancellation services'
+Review and Rating services 
+Operation services 
+Notifaction Services 
+Analyication services 
+Bus station provide Vechiles(bike/car) and dicount price is optional 
+Admin Services 
+Angualr and Flature 
+Java,Spring Boot MicroServicse ,kafka ,S3 Bucket,DB,Cache other tools and Technlogies 
+THis above one security & Discovery  and hedge services   loggs and Deplyoment jenkins and EKS server 
+and future scaling points so that future changes in the  won’t impact any  other services   turn the architecture diagram into a ** presentation-ready** color-coded visual. is above one is correct are need to change any thing 
+
+
+
+final error-free presentation-ready version
+  Bus Booking system -presentaion ready Architure   above all  module 
+ User services 
+ Role managment
+and  Roles with registaion 
+and admin side  insertion APIs keep both single and bulk features need uplaod  excel send list 
+based on sigle or bulk user will come  ex :@PostMapping("/add-bulk-users")
+
+public ResponseEntity<String> handlePostRequest(@RequestBody List<User> users) {
+}
+Search services 
+seat layout services 
+ Booking Services 
+Payment services 
+Cancellation services'
+Review and Rating services 
+Operation services 
+Notifaction Services 
+Analyication services 
+Bus station provide Vechiles(bike/car) and dicount price is optional 
+Admin Services  
+ because the system grows massively, you won’t need a risky  
+  i need full code step by step  Future system grows massively, you won’t need a risky  enhanced  spring boot micro service Fully Java code, and a unit test case, and  security  and   Service-to-service  communication  sonar qube zero bug releted 
+  
+Edge and Delivery
+ Security and Discovery 
+Micro Services  all module  
+DB layer (  uuid and index and high filter and forgin key constrain secuirty and performance and Scalability and Operational Safety  for required for mysq suppose in future if you want use mongo Db or now also you can use it system grows massively, you won’t need a risky DB refactor later 
+and ci and cd  and loggs 
+Syncronize and asyncronize 
+
+Angualr and Flature  code guide each and every step some time geting error also
+.
+
+ modify table add in add permissions column to roles table   uuid and index and high filter and forgin key constrain secuirty and performance and Scalability and Operational Safety  for required for mysq1 suppose in future if you want use mongo Db or now also you can use it system grows massively, you won’t need a risky DB refactor later and future proof and secure and scalable and operationally safe and history/audit logging and immutability rules,soft deletes,enterprise-grade, future-proof RBAC schema with immutability, soft deletes, auditing, and high-performance indexing.  i missed that table add it  .insert data  and suppose i want drop or delete tablew that query 
+
+enterprise-grade RBAC schema I designed earlier,
+
+permissions - text data type for comma-separated values
+
+
+Uses UUIDs as portable IDs for MySQL/MongoDB
+
+Supports soft deletes
+
+Is immutable for keys & UUIDs
+
+Has audit logging
+
+Has high-performance indexing
+
+

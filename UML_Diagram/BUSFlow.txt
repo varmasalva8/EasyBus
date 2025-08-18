@@ -1,0 +1,53 @@
+https://www.planttext.com/
+@startuml
+skinparam sequence {
+    ArrowColor Black
+    LifeLineBorderColor Black
+    LifeLineBackgroundColor White
+}
+
+actor Admin
+participant "Admin UI" as UI
+participant "API Gateway (Admin)" as APIGW
+participant "Admin Service" as AdminSvc
+participant "Operator Service" as OperatorSvc
+participant "Search Service" as Search
+participant "Seat Service" as Seat
+database "BusDB" as BusDB
+queue "MQ" as MQ
+
+' --- Create Bus + Route ---
+Admin -[#green]> UI: create bus + route
+UI -[#green]> APIGW: POST /admin/buses {bus, route}
+APIGW -[#green]> AdminSvc: validate & auth (OAuth2 token, RBAC)
+
+alt Auth success
+    AdminSvc -[#green]> OperatorSvc: create bus (or call BusDB directly)
+    alt No duplicate bus
+        OperatorSvc -[#green]> BusDB: insert bus, route, seat_layout
+        alt DB insert success
+            BusDB -[#green]-> OperatorSvc: bus_id
+            OperatorSvc -[#green]> MQ: publish BusCreated{busId}
+            OperatorSvc -[#green]-> AdminSvc: success
+            AdminSvc -[#green]-> APIGW: 201 created
+            APIGW -[#green]-> UI: show created bus
+        else DB insert failure
+            BusDB -[#red]-> OperatorSvc: DB error
+            OperatorSvc -[#red]-> AdminSvc: 500 internal error
+            AdminSvc -[#red]-> APIGW: 500 internal server error
+            APIGW -[#red]-> UI: show error
+        end
+    else Duplicate bus
+        OperatorSvc -[#red]-> AdminSvc: duplicate bus exists
+        AdminSvc -[#red]-> APIGW: 409 conflict
+        APIGW -[#red]-> UI: show duplicate bus error
+    end
+else Auth failure
+    AdminSvc -[#red]-> APIGW: 403 forbidden
+    APIGW -[#red]-> UI: show authorization error
+end
+
+' --- Background/Optional Consumers ---
+MQ -[#orange]> Search: index new route/bus
+MQ -[#orange]> Seat: prewarm seat cache (optional)
+@enduml
