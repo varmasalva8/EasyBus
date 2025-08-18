@@ -1,0 +1,29 @@
+db-scripts/
+ ├── schema/
+ │    ├── 001_create_users.sql
+ │    ├── 002_create_user_role.sql
+ │    ├── 003_alter_users_add_status.sql
+ │    └── ...
+ ├── procedures/
+ │    ├── sp_update_user_and_role/
+ │    │    ├── v1.sql
+ │    │    ├── v2.sql
+ │    │    └── v3.sql
+ │    └── sp_manage_permissions/
+ │         ├── v1.sql
+ │         └── v2.sql
+ ├── triggers/
+ │    ├── trg_user_update_audit_v1.sql
+ │    └── trg_user_update_audit_v2.sql
+ ├── data/
+ │    ├── seed_users.sql
+ │    ├── seed_roles.sql
+ │    └── ...
+ ├── updates/
+ │    ├── 2025-08-18_fix_user_role_permissions.sql
+ │    ├── 2025-08-25_update_user_status.sql
+ │    └── ...
+ └── rollback/
+      ├── rollback_sp_update_user_and_role_v1.sql
+      ├── rollback_trg_user_update_audit_v1.sql
+      └── ...
