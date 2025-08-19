@@ -1,76 +1,96 @@
 package com.easybus.controller;
 
-import com.easybus.entity.User;
-import com.easybus.service.UserService;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
-import java.util.stream.Collectors;
 
-@RestController
-@RequestMapping("/api/users")
-public class UserController {
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 
-    private final UserService userService;
+import com.easybus.entity.User;
+import com.easybus.model.ApiResponse;
+import com.easybus.service.UserService;
 
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
+import jakarta.validation.Valid;
 
-    // Single User Create
-    @PostMapping("/create")
-    public ResponseEntity<User> createUser(@RequestBody User user) {
-        if (user.getIsActive() == null) {
-            user.setIsActive(true); // default true
+    @RestController
+    @RequestMapping("/api/users")
+    public class UserController {
+
+        private final UserService userService;
+
+        public UserController(UserService userService) {
+            this.userService = userService;
         }
-        return ResponseEntity.ok(userService.createUser(user));
-    }
 
-    // Bulk Users Create
-    @PostMapping("/create-bulk")
-    public ResponseEntity<List<User>> createBulkUsers(@RequestBody List<User> users) {
-        users.forEach(user -> {
-            if (user.getIsActive() == null) {
-                user.setIsActive(true);
-            }
-        });
-        return ResponseEntity.ok(users.stream()
-                .map(userService::createUser)
-                .collect(Collectors.toList())); // Java 8 friendly
-    }
+        // ➤ CREATE SINGLE USER
+        @PostMapping
+        public ResponseEntity<ApiResponse<User>> createUser(@RequestBody @Valid User user) {
+            User savedUser = userService.createUser(user);
+            return ResponseEntity.ok(new ApiResponse<>("success", "User created successfully", savedUser));
+        }
 
-    @PutMapping("/{id}")
-    public ResponseEntity<User> updateUser(@PathVariable Long id, @RequestBody User user) {
-        return ResponseEntity.ok(userService.updateUser(id, user));
-    }
+        // ➤ CREATE MULTIPLE USERS
+        @PostMapping("/bulk")
+        public ResponseEntity<ApiResponse<List<User>>> createUsers(@RequestBody @Valid List<User> users) {
+            List<User> savedUsers = userService.createUsers(users);
+            return ResponseEntity.ok(new ApiResponse<>("success", "Users created successfully", savedUsers));
+        }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<Void> softDeleteUser(@PathVariable Long id) {
-        userService.softDeleteUser(id);
-        return ResponseEntity.noContent().build();
-    }
+        // ➤ GET SINGLE USER
+        @GetMapping("/{id}")
+        public ResponseEntity<ApiResponse<User>> getUser(@PathVariable Long id) {
+            User user = userService.getUser(id);
+            return ResponseEntity.ok(new ApiResponse<>("success", "User retrieved successfully", user));
+        }
 
-    @GetMapping
-    public ResponseEntity<List<User>> getUsers(
-            @RequestParam(required = false) Long id,
-            @RequestParam(required = false) String email,
-            @RequestParam(required = false) String phone
-    ) {
-        return ResponseEntity.ok(userService.getUsers(id, email, phone));
-    }
+        // ➤ GET ALL USERS
+        @GetMapping
+        public ResponseEntity<ApiResponse<List<User>>> getAllUsers() {
+            List<User> users = userService.getAllUsers();
+            return ResponseEntity.ok(new ApiResponse<>("success", "Users retrieved successfully", users));
+        }
+
+        // ➤ UPDATE SINGLE USER
+        @PutMapping("/{id}")
+        public ResponseEntity<ApiResponse<User>> updateUser(@PathVariable Long id, @RequestBody User user) {
+            User updatedUser = userService.updateUser(id, user);
+            return ResponseEntity.ok(new ApiResponse<>("success", "User updated successfully", updatedUser));
+        }
+
+        // ➤ UPDATE MULTIPLE USERS
+        @PutMapping("/bulk-update")
+        public ResponseEntity<ApiResponse<List<User>>> updateUsers(@RequestBody List<User> users) {
+            List<User> updatedUsers = userService.updateUsers(users);
+            return ResponseEntity.ok(new ApiResponse<>("success", "Users updated successfully", updatedUsers));
+        }
+
+        // ➤ DELETE SINGLE USER (soft delete)
+        @DeleteMapping("/{id}")
+        public ResponseEntity<ApiResponse<String>> deleteUser(@PathVariable Long id) {
+            userService.softDeleteUser(id);
+            return ResponseEntity.ok(new ApiResponse<>("success", "User deleted successfully", null));
+        }
+
+        // ➤ DELETE MULTIPLE USERS (soft delete)
+        @DeleteMapping("/bulk-delete")
+        public ResponseEntity<ApiResponse<String>> deleteUsers(@RequestParam List<Long> ids) {
+            userService.softDeleteUsers(ids);
+            return ResponseEntity.ok(new ApiResponse<>("success", "Users deleted successfully", null));
+        }
+    
 
     @GetMapping("/search")
-    public ResponseEntity<List<User>> searchUsers(
-            @RequestParam(required = false) Long id,
-            @RequestParam(required = false) String email,
-            @RequestParam(required = false) String phone
-    ) {
-        List<User> users = userService.searchUsers(id, email, phone);
-        if (users.isEmpty()) {
-            return ResponseEntity.notFound().build();
-        }
+    public ResponseEntity<List<User>> searchUsers() {
+        List<User> users = userService.searchUsers();
         return ResponseEntity.ok(users);
     }
 
+  
 }
