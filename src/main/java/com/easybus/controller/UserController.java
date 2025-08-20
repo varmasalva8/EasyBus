@@ -2,6 +2,9 @@ package com.easybus.controller;
 
 import java.util.List;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -15,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.easybus.entity.User;
 import com.easybus.model.ApiResponse;
+import com.easybus.model.PagedResponse;
 import com.easybus.service.UserService;
 
 import jakarta.validation.Valid;
@@ -22,7 +26,7 @@ import jakarta.validation.Valid;
     @RestController
     @RequestMapping("/api/users")
     public class UserController {
-
+    	   private static final Logger log = LoggerFactory.getLogger(UserController.class);
         private final UserService userService;
 
         public UserController(UserService userService) {
@@ -39,7 +43,9 @@ import jakarta.validation.Valid;
         // ➤ CREATE MULTIPLE USERS
         @PostMapping("/bulk")
         public ResponseEntity<ApiResponse<List<User>>> createUsers(@RequestBody @Valid List<User> users) {
+        	  log.info("Creating user with email: {}", users);
             List<User> savedUsers = userService.createUsers(users);
+            log.debug("Created user: {}", savedUsers);
             return ResponseEntity.ok(new ApiResponse<>("success", "Users created successfully", savedUsers));
         }
 
@@ -67,6 +73,7 @@ import jakarta.validation.Valid;
         // ➤ UPDATE MULTIPLE USERS
         @PutMapping("/bulk-update")
         public ResponseEntity<ApiResponse<List<User>>> updateUsers(@RequestBody List<User> users) {
+            log.info("API: bulkUpdateUsers count={}", users.size());
             List<User> updatedUsers = userService.updateUsers(users);
             return ResponseEntity.ok(new ApiResponse<>("success", "Users updated successfully", updatedUsers));
         }
@@ -81,16 +88,27 @@ import jakarta.validation.Valid;
         // ➤ DELETE MULTIPLE USERS (soft delete)
         @DeleteMapping("/bulk-delete")
         public ResponseEntity<ApiResponse<String>> deleteUsers(@RequestParam List<Long> ids) {
+        	 log.warn("API: bulkSoftDelete ids={}", ids);
             userService.softDeleteUsers(ids);
             return ResponseEntity.ok(new ApiResponse<>("success", "Users deleted successfully", null));
         }
     
 
-    @GetMapping("/search")
-    public ResponseEntity<List<User>> searchUsers() {
-        List<User> users = userService.searchUsers();
+
+    @GetMapping("/searchAll")
+    public ResponseEntity<PagedResponse<User>> searchUsers(
+            @RequestParam(required = false) String email,
+            @RequestParam(required = false) String name,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String phonNumber,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "10") int size,
+            @RequestParam(defaultValue = "id") String sortBy) {
+
+    	 PagedResponse<User> users = userService.searchUsers(email, name, status,phonNumber, page, size, sortBy);
         return ResponseEntity.ok(users);
     }
 
-  
+    
+
 }
