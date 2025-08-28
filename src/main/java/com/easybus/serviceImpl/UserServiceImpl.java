@@ -4,6 +4,7 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import org.modelmapper.ModelMapper;
@@ -15,7 +16,6 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 import com.easybus.entity.User;
-import com.easybus.entity.User.Status;
 import com.easybus.model.PagedResponse;
 import com.easybus.model.UserSpecification;
 import com.easybus.repository.UserRepository;
@@ -33,7 +33,9 @@ public class UserServiceImpl implements UserService {
 
 	@Override
 	public User createUser(User user) {
-
+		 if (user.getReferralId() == null || user.getReferralId().isEmpty()) {
+		        user.setReferralId(generateReferralCode(user.getFullName()));
+		    }
 		user.setStatus(User.Status.ACTIVE);// default active
 		return userRepository.save(user);
 	}
@@ -77,8 +79,12 @@ public class UserServiceImpl implements UserService {
 
 			throw new RuntimeException("These emails already exist: " + list);
 		}
+		
 		LocalDateTime now = LocalDateTime.now();
 		users.forEach(u -> {
+			  if (u.getReferralId() == null || u.getReferralId().isEmpty()) {
+		            u.setReferralId(generateReferralCode(u.getFullName()));
+		        }
 			u.setStatus(User.Status.ACTIVE);
 			u.setCreatedDate(now);
 			u.setCreatedBy("system"); // replace with logged-in user if available
@@ -106,7 +112,8 @@ public class UserServiceImpl implements UserService {
 				user.setPasswordHash(req.getPasswordHash());
 			if (req.getStatus() != null)
 				user.setStatus(req.getStatus());
-
+			if (req.getReferralId() != null)
+				user.setReferralId(req.getReferralId());
 			updatedUsers.add(user);
 		}
 
@@ -150,4 +157,49 @@ public class UserServiceImpl implements UserService {
 		return new PagedResponse<>(userPage.getContent(), userPage.getTotalPages(), userPage.getTotalElements(),
 				userPage.getNumberOfElements());
 	}
+	
+
+	    
+//	    private String generateReferralCode(String fullName) {
+//	        if (fullName == null || fullName.trim().isEmpty()) {
+//	            fullName = "USR"; // fallback if name is missing
+//	        }
+//
+//	        String prefix = fullName.replaceAll("\\s+", "")
+//	                                .toUpperCase()
+//	                                .substring(0, Math.min(3, fullName.length()));
+//
+//	        String code = null;
+//
+//	        // try max 5 times to avoid duplicates
+//	        for (int attempt = 0; attempt < 5; attempt++) {
+//	            String timeSuffix = String.valueOf(System.currentTimeMillis());
+//	            timeSuffix = timeSuffix.substring(timeSuffix.length() - 3);
+//
+//	            code = prefix + timeSuffix + (attempt > 0 ? attempt : "");
+//
+//	            if (!userRepository.existsByReferralId(code)) {
+//	                break; // found unique one
+//	            }
+//	        }
+//
+//	        return code;
+//	    }
+
+
+	    
+	    private String generateReferralCode(String fullName) {
+	        String prefix = (fullName != null && fullName.length() >= 3)
+	                ? fullName.substring(0, 3).toUpperCase()
+	                : "USR";
+
+	        String referralId;
+	        do {
+	            int random = (int)(Math.random() * 900) + 100; // 3-digit random number
+	            referralId = prefix + random;
+	        } while (userRepository.existsByReferralId(referralId)); // check uniqueness in DB
+
+	        return referralId;
+	    }
+	
 }

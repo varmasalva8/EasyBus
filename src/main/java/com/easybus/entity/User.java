@@ -2,12 +2,15 @@
 package com.easybus.entity;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.LastModifiedBy;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,6 +18,9 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -65,6 +71,18 @@ public class User {
 	@LastModifiedBy
 	@Column(name = "updated_by")
 	private String updatedBy;
+	
+	@Column(name = "referral_id", unique = true, nullable = true)
+    private String referralId;   // Random unique referral code
+
+    // Who referred me
+    @ManyToOne
+    @JoinColumn(name = "referred_by_id")
+    private User referredBy;
+
+    // Who I referred
+    @OneToMany(mappedBy = "referredBy", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Set<User> referredUsers = new HashSet<>();
 
 	public enum Status {
 		ACTIVE, INACTIVE, BLOCKED
