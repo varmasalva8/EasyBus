@@ -30,6 +30,7 @@ public class UserServiceImpl implements UserService {
 	public UserServiceImpl(UserRepository userRepository) {
 		this.userRepository = userRepository;
 	}
+	
 
 	@Override
 	public User createUser(User user) {
