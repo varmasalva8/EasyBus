@@ -1,6 +1,6 @@
 package com.easybus.entity;
-
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -8,37 +8,29 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
-import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-
 
 @Entity
-@Table(name = "role_permissions")
+@Table(name = "permissions")
 @Data
-@AllArgsConstructor
-@NoArgsConstructor
-public class RolePermission {
+public class Permission {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "role_permission_id")
+    @Column(name = "permission_id")
     private Long id;
 
-    @Column(name = "role_id", nullable = false)
-    private Long roleId;  // FK to Role table
+    @Column(name = "permission_uuid", columnDefinition = "BINARY(16)", nullable = false, unique = true)
+    private UUID permissionUuid;
 
-    @Column(name = "permission_id", nullable = false)
-    private Long permissionId;  // FK to Permission table
-
-    @Column(name = "permission_name")
+    
+    @Column(name = "permission_name", nullable = false, length = 255)
     private String permissionName;
 
-    @Column(name = "assigned_at", updatable = false, insertable = false,
-            columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
-    private LocalDateTime assignedAt;
+    @Column(name = "version", nullable = false)
+    private Integer version = 1;
 
-    @Column(name = "created_at", updatable = false, insertable = false,
+    @Column(name = "created_at", nullable = false, updatable = false, insertable = false,
             columnDefinition = "TIMESTAMP DEFAULT CURRENT_TIMESTAMP")
     private LocalDateTime createdAt;
 
@@ -55,7 +47,13 @@ public class RolePermission {
     @Column(name = "updated_by")
     private String updatedBy;
 
-    @Column(name = "is_active")
+    @Column(name = "is_active", nullable = false, columnDefinition = "TINYINT(1)")
     private Boolean isActive = true;
-}
 
+    // ✅ Constructors
+    public Permission() {
+        this.permissionUuid = UUID.randomUUID(); // auto-generate UUID
+    }
+
+    
+}
